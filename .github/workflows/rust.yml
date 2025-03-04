@@ -34,6 +34,10 @@ jobs:
         target: ${{ matrix.target }}
         override: true
 
+    # 添加目标平台安装步骤
+    - name: Install Rust target
+      run: rustup target add ${{ matrix.target }}
+
     - name: Cache Cargo registry
       uses: actions/cache@v3
       with:
@@ -48,19 +52,28 @@ jobs:
 
     - name: Build for ${{ matrix.platform }} (${{ matrix.target }})
       run: |
+        # 显式显示构建目录结构用于调试
+        echo "Target directory structure:"
+        ls -la target/
+        ls -la target/${{ matrix.target }}/release || true
+        
+        # 执行构建
         cargo build --release --target ${{ matrix.target }}
-        mkdir -p build/${{ matrix.platform }}-${{ matrix.target }}
-        # 修复路径匹配问题，添加目标目录路径
-        cp target/${{ matrix.target }}/release/${{ matrix.binary_name}} build/${{ matrix.platform }}-${{ matrix.target }}/
-        # 添加调试信息验证文件路径
+        
+        # 再次显示构建结果用于验证
+        echo "Build output:"
         ls -la target/${{ matrix.target }}/release/
+        
+        # 复制二进制文件
+        mkdir -p build/${{ matrix.platform }}
+        cp target/${{ matrix.target }}/release/${{ matrix.binary_name }} build/${{ matrix.platform }}/
       shell: bash
 
     - name: Prepare bundle files
       run: |
         if [ "${{ matrix.platform }}" = "windows" ]; then
-          copy "config.toml" "livers.toml" "readme.txt" "build/${{ matrix.platform }}/"
-          copy "windows.ps1" "build/${{ matrix.platform }}/"
+          cp config.toml livers.toml readme.txt "build/${{ matrix.platform }}/"
+          cp windows.ps1 "build/${{ matrix.platform }}/"
         else
           cp config.toml livers.toml readme.txt "build/${{ matrix.platform }}/"
           if [ "${{ matrix.platform }}" = "linux" ]; then
@@ -75,7 +88,7 @@ jobs:
       run: |
         cd build/${{ matrix.platform }}
         if [ "${{ matrix.platform }}" = "windows" ]; then
-          7z a "../danmaku-${{ matrix.platform }}.zip" ./*
+          Compress-Archive -Path * -DestinationPath "../danmaku-${{ matrix.platform }}.zip"
         else
           zip -r "../danmaku-${{ matrix.platform }}.zip" ./*
         fi
@@ -95,7 +108,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         path: artifacts
-        pattern: danmaku-*.zip
+        pattern: danmaku-*
         merge-multiple: true
 
     - name: Publish Release
