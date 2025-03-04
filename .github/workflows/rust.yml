@@ -6,26 +6,19 @@ on:
 
 jobs:
   build:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
           - platform: linux
             target: x86_64-unknown-linux-gnu
-            runner: ubuntu-latest
-            shell: bash
             binary_name: danmaku
           - platform: macos
             target: aarch64-apple-darwin
-            runner: macos-latest
-            shell: bash
             binary_name: danmaku
           - platform: windows
             target: x86_64-pc-windows-msvc
-            runner: windows-latest
-            shell: pwsh
             binary_name: danmaku.exe
-    
-    runs-on: ${{ matrix.runner }}
     
     steps:
     - name: Checkout code
@@ -38,7 +31,7 @@ jobs:
         target: ${{ matrix.target }}
         override: true
 
-    - name: Cache dependencies
+    - name: Cache Cargo registry
       uses: actions/cache@v3
       with:
         path: |
@@ -47,52 +40,38 @@ jobs:
         key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: |
           ${{ runner.os }}-${{ matrix.target }}-cargo-
-
-    - name: Build binary
-      run: cargo build --release --target ${{ matrix.target }}
-      shell: ${{ matrix.shell }}
-
-    - name: Prepare bundle files
-      shell: ${{ matrix.shell }}
+    
+    - name: Install cross
+      run: cargo install cross
+    
+    - name: Build for ${{ matrix.platform }} (${{ matrix.target }})
       run: |
-        # 创建输出目录
-        mkdir -p build/${{ matrix.platform }}
+        cross build --release --target ${{ matrix.target }}
+        mkdir -p build/${{ matrix.platform }}-${{ matrix.target }}
+        cp target/${{ matrix.target }}/release/${{ matrix.binary_name }} build/${{ matrix.platform }}-${{ matrix.target }}/
+    - name: Prepare bundle files
+      run: |
+        # 复制通用文件
+        cp config.toml livers.toml readme.txt build/${{ matrix.platform }}-${{ matrix.target }}/
         
-        # 复制可执行文件
-        cp target/${{ matrix.target }}/release/${{ matrix.binary_name }} build/${{ matrix.platform }}/
-        
-        # 复制通用配置文件
-        cp config.toml livers.toml readme.txt build/${{ matrix.platform }}/
-        
-        # 复制平台脚本
-        if ("${{ matrix.platform }}" -eq "linux") {
-          cp linux.sh build/${{ matrix.platform }}/
-        } elseif ("${{ matrix.platform }}" -eq "macos") {
-          cp macos.sh build/${{ matrix.platform }}/
-        } elseif ("${{ matrix.platform }}" -eq "windows") {
-          cp windows.ps1 build/${{ matrix.platform }}/
-        }
+        # 复制平台特定脚本
+        if [ "${{ matrix.platform }}" = "linux" ]; then
+          cp linux.sh build/${{ matrix.platform }}-${{ matrix.target }}/
+        elif [ "${{ matrix.platform }}" = "windows" ]; then
+          cp windows.ps1 build/${{ matrix.platform }}-${{ matrix.target }}/
+        elif [ "${{ matrix.platform }}" = "macos" ]; then
+          cp macos.sh build/${{ matrix.platform }}-${{ matrix.target }}/
+        fi
 
     - name: Create ZIP archive
-      shell: ${{ matrix.shell }}
       run: |
-        cd build/${{ matrix.platform }}
-        Compress-Archive -Path * -DestinationPath ../danmaku-${{ matrix.platform }}.zip  # Windows
-        # 其他系统使用: zip -r ../danmaku-${{ matrix.platform }}.zip ./*
-      if: matrix.platform == 'windows'
-    
-    - name: Create ZIP archive (Unix)
-      shell: bash
-      run: |
-        cd build/${{ matrix.platform }}
-        zip -r ../danmaku-${{ matrix.platform }}.zip ./*
-      if: matrix.platform != 'windows'
-
+        cd build/${{ matrix.platform }}-${{ matrix.target }}
+        zip -r ../danmaku-${{ matrix.platform }}-${{ matrix.target }}.zip ./*
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: danmaku-${{ matrix.platform }}.zip
-        path: build/danmaku-${{ matrix.platform }}.zip
+        name: danmaku-${{ matrix.platform }}-${{ matrix.target }}.zip
+        path: build/danmaku-${{ matrix.platform }}-${{ matrix.target }}.zip
 
   release:
     needs: build
@@ -102,12 +81,12 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         path: artifacts
-        pattern: danmaku-*.zip
+        pattern: app-*.zip
 
     - name: Publish Release
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          artifacts/danmaku-*.zip
+          artifacts/app-*.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
