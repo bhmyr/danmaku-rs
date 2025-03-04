@@ -88,9 +88,13 @@ jobs:
       run: |
         cd build/${{ matrix.platform }}
         if [ "${{ matrix.platform }}" = "windows" ]; then
-          Compress-Archive -Path * -DestinationPath "../danmaku-rs-${{ matrix.platform }}.zip"
+          echo "=== Windows压缩开始 ==="
+          pwsh -Command "Get-ChildItem -Path '.'"  # 调试：显示目录内容
+          pwsh -Command "Compress-Archive -Path '.' -DestinationPath '../danmaku-${{ matrix.platform }}.zip'"
         else
-          zip -r "../danmaku-rs-${{ matrix.platform }}.zip" ./*
+          echo "=== 非Windows压缩开始 ==="
+          ls -la
+          zip -r "../danmaku-${{ matrix.platform }}.zip" ./*
         fi
       shell: bash
 
