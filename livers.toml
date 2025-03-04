@@ -1,0 +1,23 @@
+[1660392980]        # 主播id
+name = "恬豆发芽了" # 主播昵称 (可选)
+uid = 1660392980    # 主播id
+roomid = 23771189   # 房间号 (可选)
+status = true       # 若为false会忽略
+
+[672328094]
+name = "嘉然今天吃什么"
+uid = 672328094
+roomid = 22637261
+status = true
+
+[401315430]
+name = "星瞳_Official"
+uid = 401315430
+roomid = 22886883
+status = true
+
+[1669777785]
+name = "露早GOGO"
+uid = 1669777785
+roomid = 25512443
+status = true

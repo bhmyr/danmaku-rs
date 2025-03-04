@@ -1,0 +1,165 @@
+# 控制端口
+# 启动后向此端口发送控制信息 
+# stop 停止 // windows.ps1/linux.sh stop 24349
+# reload 重新加载主播列表  // windows.ps1/linux.sh reload 24349
+ControlPort = "localhost:24349" 
+
+# 日志等级 debug info warn error
+LogLevel = "info" 
+
+# 主播列表，status=false 不监控
+LiverFile = "livers.toml"
+
+# 存储登录信息
+AuthFile = "auth.toml" 
+
+# 每 5 分钟检查一次主播是否直播中，<=2不检查
+LiveInterval = 5 
+
+# 如果主播不在直播中，只记录列表中信息
+# 若为空，则全记录
+# LiveInterval <= 2 时候该设置无效，全记录
+OfflineMsg = [
+    "SUPER_CHAT_MESSAGE",
+    "SEND_GIFT",
+    "USER_TOAST_MSG_V2",
+    "ROOM_CHANGE",
+    "LIVE",
+    "PREPARING",
+] 
+
+# 数据存储
+[StorageConfig]
+
+# 可选值: csv, mysql, postgres, sqlite
+# 并填写对应配置CsvPath，MysqlUrl，PostgresUrl，SqlitePath
+StorageType = "csv"
+CsvPath = "data" # ./data
+#MysqlUrl = ""  # mysql://user:password@host:port/dbname    
+#PostgresUrl = ""  # postgres://user:password@host:port/dbname  
+#SqlitePath = ""    # sqlite://./data
+
+# 日期格式（%Y%m%d 年月日）
+# 对应数据文件为 free/paid_%Y%m%d.csv，数据库表为 free/paid_%Y%m%d
+DateFormat = "%Y%m%d" 
+
+
+[msg]
+
+# [msg.CMD.free/paid]
+# name = "类型别名"
+# keys = ["字段1", "字段2"]
+# values = ["json路径1", "json路径2"]
+#
+# CMD 为信息类别， 部分如下
+# ANCHOR_LOT_NOTICE,AREA_RANK_CHANGED,COMBO_SEND,COMMON_ANIMATION,COMMON_NOTICE_DANMAKU,DANMU_MSG,DM_INTERACTION,ENTRY_EFFECT,FULL_SCREEN_SPECIAL_EFFECT,GIFT_STAR_PROCESS,GOTO_BUY_FLOW,GUARD_BUY,INTERACT_WORD,LIKE_INFO_V3_CLICK,LIKE_INFO_V3_UPDATE,LIVE,LOG_IN_NOTICE,NOTICE_MSG,ONLINE_RANK_COUNT,ONLINE_RANK_V2,OTHER_SLICE_LOADING_RESULT,POPULAR_RANK_CHANGED,POPULAR_RANK_GUIDE_CARD,POPULARITY_RED_POCKET_NEW,POPULARITY_RED_POCKET_START,POPULARITY_RED_POCKET_V2_NEW,POPULARITY_RED_POCKET_V2_START,POPULARITY_RED_POCKET_V2_WINNER_LIST,POPULARITY_RED_POCKET_WINNER_LIST,PREPARING,RANK_CHANGED,RANK_REM,RECALL_DANMU_MSG,RECOMMEND_CARD,REVENUE_RANK_CHANGED,RING_STATUS_CHANGE,RING_STATUS_CHANGE_V2,ROOM_CHANGE,ROOM_REAL_TIME_MESSAGE_UPDATE,SEND_GIFT,SHOPPING_CART_SHOW,STOP_LIVE_ROOM_LIST,SUPER_CHAT_MESSAGE,SUPER_CHAT_MESSAGE_DELETE,SUPER_CHAT_MESSAGE_JPN,TRADING_SCORE,USER_TOAST_MSG,USER_TOAST_MSG_V2,WARNING,WATCHED_CHANGE,WIDGET_GIFT_STAR_PROCESS
+#
+# free/paid 为数据类别，free为免费数据，paid为付费数据
+# 
+# 获取数据为json，当CMD匹配上[msg.CMD.free/paid]，开始解析
+# 在 json 中查找 json路径 对应的值，生成 {"字段1"："json路径1的值", "字段2"："json路径2的值", ...}
+# 若字段1为_select, 对应的值不等于=后面的值，不记录
+
+
+# 弹幕
+# 时间戳、主播id、弹幕、{"uid":"info.0.15.user.uid","msg":"info.1"}
+[msg.DANMU_MSG.free]
+name = "弹幕"
+keys = ["uid", "msg"]
+values = ["info.0.15.user.uid", "info.1"]
+
+# 点赞
+#[msg.LIKE_INFO_V3_UPDATE.free] 
+#keys = ["count"]
+#values = ["data.click_count"]
+
+# 开播
+# 时间戳、主播id、弹幕、{"timestamp":"live_time"}
+[msg.LIVE.free]
+name = "开播"
+keys = ["timestamp"]
+values = ["live_time"]
+
+# 高能与在线
+#[msg.ONLINE_RANK_COUNT.free] 
+#keys = ["count", "online_count"]
+#values = ["data.count", "data.online_count"]
+
+# 下播
+[msg.PREPARING.free]
+name = "下播"
+keys = ["send_time"]
+values = ["send_time"]
+
+# 标题更换
+[msg.ROOM_CHANGE.free]
+name = "标题更换"
+keys = ["title", "area_name"]
+values = ["data.title", "data.area_name"]
+
+# 粉丝更新
+[msg.ROOM_REAL_TIME_MESSAGE_UPDATE.free]
+name = "粉丝更新"
+keys = ["fans", "fansclub"]
+values = ["data.fans", "data.fans_club"]
+
+# 高能
+[msg.ONLINE_RANK_COUNT.free]
+name = "高能"
+keys = ["count", "online_count"]
+values = ["data.count", "data.online_count"]
+
+# 超管红色SC
+[msg.WARNING.free]
+name = "警告"
+keys = ["msg"]
+values = ["msg"]
+
+# 每当上舰记录一条当前总舰队
+[msg.USER_TOAST_MSG_V2.free]
+name = "舰队更新"
+keys = ["total"]
+values = ["data.guard_info.room_guard_count"]
+
+# 免费礼物
+#[msg.SEND_GIFT.free] 
+#keys = ["_select", "name", "uid", "gift", "price", "num"]
+#values = [
+#    "data.coin_type=silver",
+#    "data.uname",
+#    "data.uid",
+#    "data.giftName",
+#    "data.price",
+#    "data.num",
+#]
+
+# 上舰 价格为1/1000元
+[msg.USER_TOAST_MSG_V2.paid]
+name = "舰队"
+keys = ["uid", "guard", "num", "price"]
+values = [
+    "data.sender_uinfo.uid",
+    "data.guard_info.role_name",
+    "data.pay_info.num",
+    "data.pay_info.price",
+]
+
+# 付费礼物 价格为1/1000元
+# 只记录 data.coin_type 等于 gold 的数据，即付费数据
+# 时间戳、主播id、弹幕、{"uid":"data.uid","gift":"data.giftName","num":"data.num","price":"data.price"}
+[msg.SEND_GIFT.paid]
+name = "付费礼物"
+keys = ["_select", "uid", "gift", "num", "price"]
+values = [
+    "data.coin_type=gold",
+    "data.uid",
+    "data.giftName",
+    "data.num",
+    "data.price",
+]
+
+# SC 价格为元
+[msg.SUPER_CHAT_MESSAGE.paid]
+name = "SC"
+keys = ["uid", "msg", "price"]
+values = ["data.uid", "data.message", "data.price"]
