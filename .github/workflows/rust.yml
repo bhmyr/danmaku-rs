@@ -46,15 +46,14 @@ jobs:
           ${{ runner.os }}-cargo-${{ matrix.target }}-
           ${{ runner.os }}-cargo-
 
-    - name: Build for ${{ matrix.platform }}
+    - name: Build for ${{ matrix.platform }} (${{ matrix.target }})
       run: |
         cargo build --release --target ${{ matrix.target }}
-        mkdir -p build/${{ matrix.platform }}
-        if [ "${{ matrix.platform }}" = "windows" ]; then
-          copy "target/${{ matrix.target }}/release/${{ matrix.binary_name }}" "build/${{ matrix.platform }}/"
-        else
-          cp "target/${{ matrix.target }}/release/${{ matrix.binary_name }}" "build/${{ matrix.platform }}/"
-        fi
+        mkdir -p build/${{ matrix.platform }}-${{ matrix.target }}
+        # 修复路径匹配问题，添加目标目录路径
+        cp target/${{ matrix.target }}/release/${{ matrix.binary_name}} build/${{ matrix.platform }}-${{ matrix.target }}/
+        # 添加调试信息验证文件路径
+        ls -la target/${{ matrix.target }}/release/
       shell: bash
 
     - name: Prepare bundle files
