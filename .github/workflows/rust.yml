@@ -12,19 +12,13 @@ jobs:
         include:
           - platform: linux
             target: x86_64-unknown-linux-gnu
-            binary_name: blive-rs
-          - platform: linux
-            target: aarch64-unknown-linux-gnu 
-            binary_name: blive-rs
-          - platform: macos
-            target: x86_64-apple-darwin
-            binary_name: blive-rs
+            binary_name: danmaku
           - platform: macos
             target: aarch64-apple-darwin
-            binary_name: blive-rs
+            binary_name: danmaku
           - platform: windows
             target: x86_64-pc-windows-msvc
-            binary_name: blive-rs.exe
+            binary_name: danmaku.exe
     
     steps:
     - name: Checkout code
@@ -70,12 +64,12 @@ jobs:
     - name: Create ZIP archive
       run: |
         cd build/${{ matrix.platform }}-${{ matrix.target }}
-        zip -r ../blive-rs-${{ matrix.platform }}-${{ matrix.target }}.zip ./*
+        zip -r ../danmaku-${{ matrix.platform }}-${{ matrix.target }}.zip ./*
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: blive-rs-${{ matrix.platform }}-${{ matrix.target }}.zip
-        path: build/blive-rs-${{ matrix.platform }}-${{ matrix.target }}.zip
+        name: danmaku-${{ matrix.platform }}-${{ matrix.target }}.zip
+        path: build/danmaku-${{ matrix.platform }}-${{ matrix.target }}.zip
 
   release:
     needs: build
