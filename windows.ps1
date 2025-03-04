@@ -35,7 +35,7 @@ param(
 )
 
 # 应用配置
-$appPath = ".\danmaku.exe"  # 修改为实际可执行文件路径
+$appPath = ".\danmaku-rs.exe"  # 修改为实际可执行文件路径
 
 function Send-Signal {
     param(
@@ -62,7 +62,7 @@ function Send-Signal {
 switch ($Command) {
     "start" {
         # 检查现有进程
-        if (Get-Process -Name "danmaku" -ErrorAction SilentlyContinue) {
+        if (Get-Process -Name "danmaku-rs" -ErrorAction SilentlyContinue) {
             Write-Error "错误：应用已在运行中"
             exit 1
         }

@@ -12,15 +12,15 @@ jobs:
         include:
           - platform: linux
             runs_on: ubuntu-latest
-            binary_name: danmaku
+            binary_name: danmaku-rs
             target: x86_64-unknown-linux-gnu
           - platform: macos
             runs_on: macos-latest
-            binary_name: danmaku
+            binary_name: danmaku-rs
             target: x86_64-apple-darwin
           - platform: windows
             runs_on: windows-latest
-            binary_name: danmaku.exe
+            binary_name: danmaku-rs.exe
             target: x86_64-pc-windows-msvc
 
     steps:
@@ -88,17 +88,17 @@ jobs:
       run: |
         cd build/${{ matrix.platform }}
         if [ "${{ matrix.platform }}" = "windows" ]; then
-          Compress-Archive -Path * -DestinationPath "../danmaku-${{ matrix.platform }}.zip"
+          Compress-Archive -Path * -DestinationPath "../danmaku-rs-${{ matrix.platform }}.zip"
         else
-          zip -r "../danmaku-${{ matrix.platform }}.zip" ./*
+          zip -r "../danmaku-rs-${{ matrix.platform }}.zip" ./*
         fi
       shell: bash
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: danmaku-${{ matrix.platform }}
-        path: build/danmaku-${{ matrix.platform }}.zip
+        name: danmaku-rs-${{ matrix.platform }}
+        path: build/danmaku-rs-${{ matrix.platform }}.zip
 
   release:
     needs: build
@@ -108,12 +108,12 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         path: artifacts
-        pattern: danmaku-*
+        pattern: danmaku-rs-*
         merge-multiple: true
 
     - name: Publish Release
       uses: softprops/action-gh-release@v1
       with:
-        files: artifacts/danmaku-*.zip
+        files: artifacts/danmaku-rs-*.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

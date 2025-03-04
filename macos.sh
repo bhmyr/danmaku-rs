@@ -4,7 +4,7 @@
 # 支持功能：start | stop | reload
 # 默认控制端口：24349
 
-APP_PATH="./danmaku"
+APP_PATH="./danmaku-rs"
 DEFAULT_PORT=24349
 OS_TYPE=$(uname -s)
 

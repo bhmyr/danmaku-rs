@@ -4,7 +4,7 @@
 # 使用说明与PowerScript版保持一致
 
 # 应用配置
-APP_PATH="./danmaku"
+APP_PATH="./danmaku-rs"
 
 # 参数解析
 COMMAND=${1:-}
