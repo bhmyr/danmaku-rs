@@ -72,10 +72,10 @@ jobs:
     - name: Prepare bundle files
       run: |
         if [ "${{ matrix.platform }}" = "windows" ]; then
-          cp config.toml livers.toml readme.txt "build/${{ matrix.platform }}/"
+          cp config.toml livers.toml readme.md "build/${{ matrix.platform }}/"
           cp windows.ps1 "build/${{ matrix.platform }}/"
         else
-          cp config.toml livers.toml readme.txt "build/${{ matrix.platform }}/"
+          cp config.toml livers.toml readme.md "build/${{ matrix.platform }}/"
           if [ "${{ matrix.platform }}" = "linux" ]; then
             cp linux.sh "build/${{ matrix.platform }}/"
           elif [ "${{ matrix.platform }}" = "macos" ]; then
