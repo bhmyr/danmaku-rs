@@ -155,7 +155,6 @@ dependencies = [
  "flate2",
  "futures-util",
  "hex",
- "libsqlite3-sys",
  "log",
  "log4rs",
  "qrcode",
