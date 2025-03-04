@@ -1,115 +1,107 @@
-name: Build Release
+name: Release Build
 
 on:
   release:
     types: [created]
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ${{ matrix.runs_on }}
+    strategy:
+      matrix:
+        include:
+          - platform: linux
+            runs_on: ubuntu-latest
+            binary_name: danmaku
+            target: x86_64-unknown-linux-gnu
+          - platform: macos
+            runs_on: macos-latest
+            binary_name: danmaku
+            target: x86_64-apple-darwin
+          - platform: windows
+            runs_on: windows-latest
+            binary_name: danmaku.exe
+            target: x86_64-pc-windows-msvc
+
     steps:
-      - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        target: ${{ matrix.target }}
+        override: true
 
-      - name: Install cross
-        run: cargo install cross
+    - name: Cache Cargo registry
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-${{ matrix.target }}-
+          ${{ runner.os }}-cargo-
 
-      - name: Build for Linux x86_64
-        run: cross build --target x86_64-unknown-linux-gnu --release
+    - name: Build for ${{ matrix.platform }}
+      run: |
+        cargo build --release --target ${{ matrix.target }}
+        mkdir -p build/${{ matrix.platform }}
+        if [ "${{ matrix.platform }}" = "windows" ]; then
+          copy "target/${{ matrix.target }}/release/${{ matrix.binary_name }}" "build/${{ matrix.platform }}/"
+        else
+          cp "target/${{ matrix.target }}/release/${{ matrix.binary_name }}" "build/${{ matrix.platform }}/"
+        fi
+      shell: bash
 
-      - name: Prepare Linux artifact
-        run: |
-          mkdir -p release
-          cp target/x86_64-unknown-linux-gnu/release/danmaku release/
-          cp config.toml livers.toml readme.txt linux.sh release/
-          tar czvf danmaku-linux-x86_64.tar.gz -C release .
+    - name: Prepare bundle files
+      run: |
+        if [ "${{ matrix.platform }}" = "windows" ]; then
+          copy "config.toml" "livers.toml" "readme.txt" "build/${{ matrix.platform }}/"
+          copy "windows.ps1" "build/${{ matrix.platform }}/"
+        else
+          cp config.toml livers.toml readme.txt "build/${{ matrix.platform }}/"
+          if [ "${{ matrix.platform }}" = "linux" ]; then
+            cp linux.sh "build/${{ matrix.platform }}/"
+          elif [ "${{ matrix.platform }}" = "macos" ]; then
+            cp macos.sh "build/${{ matrix.platform }}/"
+          fi
+        fi
+      shell: bash
 
-      - name: Upload Linux artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: danmaku-linux
-          path: danmaku-linux-x86_64.tar.gz
+    - name: Create ZIP archive
+      run: |
+        cd build/${{ matrix.platform }}
+        if [ "${{ matrix.platform }}" = "windows" ]; then
+          7z a "../danmaku-${{ matrix.platform }}.zip" ./*
+        else
+          zip -r "../danmaku-${{ matrix.platform }}.zip" ./*
+        fi
+      shell: bash
 
-  build-windows:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-
-      - name: Install cross
-        run: cargo install cross
-
-      - name: Build for Windows x86_64
-        run: cross build --target x86_64-pc-windows-gnu --release
-
-      - name: Prepare Windows artifact
-        run: |
-          mkdir -p release
-          cp target/x86_64-pc-windows-gnu/release/danmaku.exe release/
-          cp config.toml livers.toml readme.txt windows.ps1 release/
-          zip -j danmaku-windows-x86_64.zip release/*
-
-      - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: danmaku-windows
-          path: danmaku-windows-x86_64.zip
-
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-
-      - name: Build for macOS ARM
-        run: cargo build --release --target aarch64-apple-darwin
-
-      - name: Prepare macOS artifact
-        run: |
-          mkdir -p release
-          cp target/aarch64-apple-darwin/release/danmaku release/
-          cp config.toml livers.toml readme.txt macos.sh release/
-          tar czvf danmaku-macos-arm64.tar.gz -C release .
-
-      - name: Upload macOS artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: danmaku-macos
-          path: danmaku-macos-arm64.tar.gz
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: danmaku-${{ matrix.platform }}
+        path: build/danmaku-${{ matrix.platform }}.zip
 
   release:
-    needs: [build-linux, build-windows, build-macos]
+    needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+        pattern: danmaku-*.zip
+        merge-multiple: true
 
-      - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            artifacts/danmaku-linux/danmaku-linux-x86_64.tar.gz
-            artifacts/danmaku-windows/danmaku-windows-x86_64.zip
-            artifacts/danmaku-macos/danmaku-macos-arm64.tar.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Publish Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: artifacts/danmaku-*.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
