@@ -54,8 +54,8 @@ jobs:
       run: |
         # 显式显示构建目录结构用于调试
         echo "Target directory structure:"
-        ls -la target/
-        ls -la target/${{ matrix.target }}/release || true
+        ls -la target/ || true
+        ls -la target/x86_64-unknown-linux-gnu/release || true
         
         # 执行构建
         cargo build --release --target ${{ matrix.target }}
